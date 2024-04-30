@@ -1,69 +1,68 @@
-import { Request, Response } from 'express';
-import User from '../models/userModel';
-// import { UserView } from '../views/userView';
-
-// const userView = new UserView(); 
-export const getAllUsers = async (req: Request, res: Response) => {
-    
+import { Request, Response, NextFunction } from 'express';
+import { IUser } from '../models/userModel';
+import userService from '../service/userService';
+class UserController {
+  async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-        const users = await User.find();
-        res.json(users);
-        // userView.renderUserList(users, res); 
+      const user: IUser|boolean = await userService.createUser(req.body);
+      if(user===false){
+        res.status(409).json({ error: 'Given Email address is already used' });
+        return;
+      }
+      res.status(201).json(user);
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+      next(error);
     }
-};
-
-export const getUserById = async (req: Request, res: Response) => {
-    const id = req.params.id;
+  }
+  async deleteUser(req: Request, res: Response, next: NextFunction) {
+    const id: string = req.params.id;
     try {
-        const user = await User.findById(id);
-        if (user) {
-            res.json(user);
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
+      const user: IUser | null = await userService.deleteUser(id);
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+      res.json(user);
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+      next(error);
     }
-};
-
-export const createUser = async (req: Request, res: Response) => {
-    const { _id,name, email,age } = req.body;
+  }
+  async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
-        const newUser = await User.create({ _id,name, email,age });
-        res.status(201).json(newUser);
+      const user: object = await userService.getAllUsers();
+      res.json(user);
     } catch (error) {
-        res.status(400).json({ error: 'Invalid data' });
+      next(error);
     }
-};
-
-export const updateUser = async (req: Request, res: Response) => {
-    const id = req.params.id;
-    const { name, email,age } = req.body;
+  }
+  async getUserById(req: Request, res: Response, next: NextFunction) {
+    const id: string = req.params.id;
     try {
-        const user = await User.findByIdAndUpdate(id, { name, email,age }, { new: true });
-        if (user) {
-            res.json(user);
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
+      const user: IUser | null = await userService.getUserById(id);
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+      res.json(user);
     } catch (error) {
-        res.status(400).json({ error: 'Invalid data' });
+      next(error);
     }
-};
+  }
+  async updateUser(req: Request, res: Response, next:NextFunction){
+    const id:string=req.params.id;
+    const { name, email, age } = req.body;
+    try{
+      const user:IUser|null=await userService.updateUser(id, { name, email, age });
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+      }else{
+        res.json(user);
+      }
+    }catch(error){
+      next(error);
+    }
 
-export const deleteUser = async (req: Request, res: Response) => {
-    const id = req.params.id;
-    try {
-        const user = await User.findByIdAndDelete(id);
-        if (user) {
-            res.json(user);
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
+  }
+}
+export default new UserController();
 
